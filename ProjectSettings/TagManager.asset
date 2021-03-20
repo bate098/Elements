@@ -12,6 +12,10 @@ TagManager:
   - Player_Weapon
   - walls
   - Enemy
+  - Breakable
+  - Button
+  - ScreenShake
+  - CloudEnd
   layers:
   - Default
   - TransparentFX

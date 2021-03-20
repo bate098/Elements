@@ -8,9 +8,11 @@ public class DialogOption : Interactable
     //public float textSpeed = 1f;
     public float textBreakTime = 1f;
 	public string[] messageText;
-    public AudioClip[] audioClips;
     public int[] audioIndices;
+    public float[] audioLengths;
     public string eventPath;
+    public bool repeatable = false;
+    public bool darkmode = false;
 
     private int currAudioClip = -1;
 
@@ -24,7 +26,14 @@ public class DialogOption : Interactable
 	void Start()
 	{
         // audioPlayer = GetComponent<AudioSource>();
-        eventInstance = RuntimeManager.CreateInstance(eventPath);
+        
+        try {
+            eventInstance = RuntimeManager.CreateInstance(eventPath);
+        } catch (EventNotFoundException) {
+            Debug.Log("Event not found.");
+        }
+        
+        
         anim = GetComponent<Animator>();
 
         if ( startImmediately )
@@ -78,8 +87,8 @@ public class DialogOption : Interactable
         float time_per_char = 0f;
         foreach ( string message in messageText ) {
             int char_count = message.Length - (message.Split(' ').Length - 1);
-            time_per_char = (audioClips[index].length)/ char_count;
-            EventManager.instance.DisplayText(message, time_per_char, textBreakTime);
+            time_per_char = (audioLengths[index])/ char_count;
+            EventManager.instance.DisplayText(message, time_per_char, textBreakTime, darkmode);
             index++;
         }
         _playNextAudioClip();
@@ -88,8 +97,14 @@ public class DialogOption : Interactable
     void _finishTalking()
     {
         Debug.Log("Here 2: " + nextPhase);
-        AdvanceQuest();
         _stopTalking();
+        if (!repeatable) 
+        {
+            NPC npc = gameObject.GetComponent<NPC>();
+            int index = npc.interactables.IndexOf(this);
+            npc.endQuestPhase[index] = QuestManager.GetQuestPhase( npc.quests[index] );
+        }        
+        AdvanceQuest();
     }
 
     void _stopTalking()
@@ -103,7 +118,7 @@ public class DialogOption : Interactable
     {
         talkPauseTimer = 0f;
         currAudioClip += 1;
-        if ( currAudioClip  == audioClips.Length )
+        if ( audioIndices.Length == 0 || currAudioClip == audioIndices.Length )
         {
             // audioPlayer.clip = null;
             currAudioClip = -1;
@@ -120,7 +135,9 @@ public class DialogOption : Interactable
             // audioPlayer.Play();
             
             eventInstance.setParameterByName("Dialogue Option", audioIndices[currAudioClip]);
+            
             eventInstance.start();
+            
         }
     }
     
